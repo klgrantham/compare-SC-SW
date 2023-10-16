@@ -117,3 +117,11 @@ pow <- function(vars, effsize, siglevel=0.05){
   pow <- pnorm(z + sqrt(1/vars)*effsize)
   return(pow)
 }
+
+psi_corr <- function(m, rho0, r){
+  (m*rho0*r)/(1+(m-1)*rho0)
+}
+
+implied_r <- function(m, rho0, psi){
+  psi*(1+(m-1)*rho0)/(m*rho0)
+}
