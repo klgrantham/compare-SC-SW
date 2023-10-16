@@ -112,6 +112,16 @@ VarSCcat <- function(m, S, K, rho0, r){
   return(vartheta)
 }
 
+VarSW_alt <- function(m, S, K, rho0, r){
+  totalvar <- 1
+  sig2CP <- rho0*totalvar
+  sig2E <- totalvar - sig2CP
+  sig2 <- sig2E/m
+  a <- sig2 + sig2CP
+  b <- r*sig2CP
+  (12*(a - b)*(a + S*b))/(K*(S^2 - 1)*(2*a + S*b))
+}
+
 pow <- function(vars, effsize, siglevel=0.05){
   z <- qnorm(siglevel/2)
   pow <- pnorm(z + sqrt(1/vars)*effsize)
