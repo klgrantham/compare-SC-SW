@@ -12,32 +12,25 @@ source('functions_releff.R')
 emp_power <- function(nsim, SWdes, K, m, ICC, CAC, theta){
   # Calculates empirical power based on nsim simulated trial datasets
   
-  # Generate trial dataset, fit model, calculate rejection probability
-  res <- replicate(nsim, fitmodels(SWdes, K, m, ICC, CAC, theta))
-  
+  # Generate trial dataset and fit models, nsim times
+  resrep <- replicate(nsim, fitmodels(SWdes, K, m, ICC, CAC, theta), simplify=FALSE)
+  res <- list_rbind(resrep) # Convert from list to dataframe
+
   # Calculate rejection proportion for empirical power
-  nsimSW <- sum(!is.na(abs(res[1,])/res[2,] > 1.96))
-  pwrSW <- sum(abs(res[1,])/res[2,] > 1.96, na.rm=TRUE)/nsimSW
-  nsimSC <- sum(!is.na(abs(res[3,])/res[4,] > 1.96))
-  pwrSC <- sum(abs(res[3,])/res[4,] > 1.96, na.rm=TRUE)/nsimSC
+  nsimSW <- sum(!is.na(res$estSW) & !is.na(res$seSW))
+  pwrSW <- sum(abs(res$estSW)/res$seSW > 1.96, na.rm=TRUE)/nsimSW
+  nsimSC <- sum(!is.na(res$estSC) & !is.na(res$seSC))
+  pwrSC <- sum(abs(res$estSC)/res$seSC > 1.96, na.rm=TRUE)/nsimSC
   
-  empvarSW <- var(res[1,], na.rm=TRUE)
-  empvarSC <- var(res[3,], na.rm=TRUE)
-
-  # Calculate empirical power with Kenward-Roger correction
-  # Get t test statistic with KR-adjusted ddf
-#  alpha <- (1 + 0.95)/2
-#  tstatSW <- qt(alpha, res[6,])
-#  tstatSC <- qt(alpha, res[8,])
-#  pwrSW_KR <- sum(abs(res[1,])/res[5,] > tstatSW)/nsim
-#  pwrSC_KR <- sum(abs(res[1,])/res[7,] > tstatSC)/nsim
-
+  empvarSW <- var(res$estSW, na.rm=TRUE)
+  empvarSC <- var(res$estSC, na.rm=TRUE)
+  
   # Type I error rate
-  nsimSW0 <- sum(!is.na(abs(res[5,])/res[6,] > 1.96))
-  typeISW <- sum(abs(res[5,])/res[6,] > 1.96, na.rm=TRUE)/nsimSW0
-  nsimSC0 <- sum(!is.na(abs(res[7,])/res[8,] > 1.96))
-  typeISC <- sum(abs(res[7,])/res[8,] > 1.96, na.rm=TRUE)/nsimSC0
-
+  nsimSW0 <- sum(!is.na(res$estSW0) & !is.na(res$seSW0))
+  typeISW <- sum(abs(res$estSW0)/res$seSW0 > 1.96, na.rm=TRUE)/nsimSW0
+  nsimSC0 <- sum(!is.na(res$estSC0) & !is.na(res$seSC0))
+  typeISC <- sum(abs(res$estSC0)/res$seSC0 > 1.96, na.rm=TRUE)/nsimSC0
+  
   powvals <- data.frame(power_SW=pwrSW, power_SC=pwrSC,
                         emp_var_SW=empvarSW, emp_var_SC=empvarSC,
                         nsimSW=nsimSW, nsimSC=nsimSC,
@@ -75,46 +68,25 @@ fitmodels <- function(SWdes, K, m, ICC, CAC, theta){
     seSC0 <- sqrt(vcov(fitSC0)['treat','treat'])
   }else{
     fitSW <- fitDTDmodel(datSW)
-#    fitSW <- glmmTMB(Y ~ treat + time + ar1(time + 0|cluster), data=datSW, REML=TRUE)
     estSW <- ifelse(is.null(fitSW), NA, fixef(fitSW)[[1]]['treat'])
     seSW <- ifelse(is.null(fitSW), NA, getSE(fitSW))
 
     fitSW0 <- fitDTDmodel0(datSW)
-#    fitSW0 <- glmmTMB(Y0 ~ treat + time + ar1(time + 0|cluster), data=datSW, REML=TRUE)
     estSW0 <- ifelse(is.null(fitSW0), NA, fixef(fitSW0)[[1]]['treat'])
     seSW0 <- ifelse(is.null(fitSW0), NA, getSE(fitSW0))
-    
-    # TODO: Run again with glmmTMB for staircase
-#    fitSC <- fitBEmodelSC(datSC)
-    fitSC <- fitDTDmodel(datSC)
-#    fitSC <- lmer(Y ~ treat + time + (1|cluster) + (1|clustper), data=datSC, REML=TRUE)
+
+    fitSC <- fitBEmodelSC(datSC)
     estSC <- ifelse(is.null(fitSC), NA, fixef(fitSC)['treat'])
-#    seSC <- ifelse(is.null(fitSC), NA, sqrt(vcov(fitSC)['treat','treat']))
-    seSC <- ifelse(is.null(fitSC), NA, getSE(fitSC))
-    
-#    fitSC0 <- fitBEmodelSC0(datSC)
-    fitSC0 <- fitDTDmodel(datSC)
-#    fitSC0 <- lmer(Y0 ~ treat + time + (1|cluster) + (1|clustper), data=datSC, REML=TRUE)
+    seSC <- ifelse(is.null(fitSC), NA, sqrt(vcov(fitSC)['treat','treat']))
+
+    fitSC0 <- fitBEmodelSC0(datSC)
     estSC0 <- ifelse(is.null(fitSC0), NA, fixef(fitSC0)['treat'])
-#    seSC0 <- ifelse(is.null(fitSC0), NA, sqrt(vcov(fitSC0)['treat','treat']))
-    seSC0 <- ifelse(is.null(fitSC0), NA, getSE(fitSC0))
+    seSC0 <- ifelse(is.null(fitSC0), NA, sqrt(vcov(fitSC0)['treat','treat']))
   }
   
-  # Get adjusted SE with Kenward-Roger correction
-  # Note: This only works for exchangeable models (lmer model fit objects).
-  # Possible to implement for discrete-time decay correlation models (glmmTMB)?
-#  vcov0SW <- vcov(fitSW)
-#  vcovKRSW <- vcovAdj(fitSW)
-#  adj_SESW <- sqrt(vcovKRSW['treat','treat'])
-#  adj_ddfSW <- Lb_ddf(c(0,1,0,0,0,0,0), vcov0SW, vcovKRSW)
-  
-#  vcov0SC <- vcov(fitSC)
-#  vcovKRSC <- vcovAdj(fitSC)
-#  adj_SESC <- sqrt(vcovKRSC['treat','treat'])
-#  adj_ddfSC <- Lb_ddf(c(0,1,0,0,0,0,0), vcov0SC, vcovKRSC)
-  
-  return(c(estSW, seSW, estSC, seSC,
-           estSW0, seSW0, estSC0, seSC0))
+  res1 <- data.frame(estSW=estSW, seSW=seSW, estSC=estSC, seSC=seSC,
+                     estSW0=estSW0, seSW0=seSW0, estSC0=estSC0, seSC0=seSC0)
+  return(res1)
 }
 
 fitDTDmodel <- function(dat){
@@ -264,13 +236,7 @@ res30 <- emp_power(1000, SWdesmat(5,1), 8, 30, 0.03, 1, 0.15)
 res20$emp_var_SW/res20$emp_var_SC
 res20$emp_var_SW/res30$emp_var_SC
 
-#dat <- gentrialdata(SWdesmat(5,1), 8, 20, 0.032, 0.97, 0.15)
-#datSW <- dat[[1]]
-#fit <- fitDTDmodel(datSW)
-#fit
-
 # Calculate empirical power for the designs under discrete-time decay correlation
-#res20_DTD_100 <- emp_power(100, SWdesmat(5,1), 8, 20, 0.032, 0.97, 0.15)
 res20_DTD <- emp_power(1000, SWdesmat(5,1), 8, 20, 0.032, 0.97, 0.15)
 res30_DTD <- emp_power(1000, SWdesmat(5,1), 8, 30, 0.032, 0.97, 0.15)
 
