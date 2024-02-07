@@ -288,7 +288,7 @@ releffSCSW_grid_multiplot_corr_diffS <- function(S1, S2, K_SW, K_SC,
           strip.background = element_rect(
             color="white", fill="white", linetype="solid"
           ),
-          strip.text.x = element_text(size = 12),
+          strip.text.x = element_text(size=12),
           strip.text.y = element_text(size=12)) +
     coord_fixed() + xlab(expression(paste("Cluster autocorrelation, ", r))) +
     ylab(expression(paste("Within-period ICC, ", rho))) +
@@ -410,8 +410,8 @@ releffSCSW_grid_multiplot_diffm_diffS <- function(S1, S2,
           strip.background = element_rect(
             color="white", fill="white", linetype="solid"
           ),
-          strip.text.x = element_text(size=10),
-          strip.text.y = element_text(size=10)) +
+          strip.text.x = element_text(size=12),
+          strip.text.y = element_text(size=12)) +
     coord_fixed() + xlab(expression(paste("Cluster autocorrelation, ", r))) +
     ylab(expression(paste("Within-period ICC, ", rho))) +
     ggtitle(title)
@@ -536,7 +536,7 @@ releff_SW_extendedSC_diffS <- function(S1, S2, K_SW,
           strip.background = element_rect(
             color="white", fill="white", linetype="solid"
           ),
-          strip.text.x = element_text(size = 12),
+          strip.text.x = element_text(size=12),
           strip.text.y = element_text(size=12)) +
     coord_fixed() + xlab(expression(paste("Cluster autocorrelation, ", r))) +
     ylab(expression(paste("Within-period ICC, ", rho))) +
@@ -552,6 +552,374 @@ releff_SW_extendedSC_diffS <- function(S1, S2, K_SW,
                 rhouval, impper, ".jpg"), p, width=9, height=5, units="in", dpi=800)
   ggsave(paste0("plots/releff_extendedSC_Sq11_vs_SW_S", K_SW, "_",
                 corrstruct, "_", pereff, "_", rng, "_S_", S1, "_", S2, "_rhou_",
+                rhouval, impper, ".pdf"), p, width=9, height=5, units="in", dpi=600)
+  return(p)
+}
+
+releffSCSW_grid_multiplot_corr_singleS <- function(S, K, corrtype, pereff,
+                                                   fixedscale=FALSE, limits=c(0,1),
+                                                   breaks=seq(0,1,0.2),
+                                                   fullrange=FALSE, rhou=0, imp=FALSE){
+  # Compare variances of complete SW designs and embedded basic staircase designs,
+  # for a range of correlation parameters, and for different cluster-period sizes
+  # Inputs:
+  #  S - number of unique treatment sequences
+  #  K - number of clusters randomised to each sequence
+  #  corrtype - within-cluster correlation structure type
+  #             (0=block-exchangeable, 1=exponential decay)
+  #  pereff - time period effect type
+  #           ('cat'=categorical period effects, 'lin'=linear period effects)
+  #  fixedscale - Use particular limits and breaks for colour scale (T/F)
+  #  limits - Range of values for colour scale shading
+  #  breaks - Indices for colour scale legend and contour lines
+  #  fullrange - Use full correlation parameter ranges (T/F)
+  #  rhou - correlation between a participant's repeated measurements
+  #          (default of 0 means each participant is measured just once)
+  #  imp - Include implementation periods in design (T/F)
+  # Output:
+  #  Contour plot of relative efficiencies (vartheta_SW/vartheta_SC)
+  
+  m1 <- 10
+  m2 <- 100
+  relvars_m1 <- gridvals_small(m1, S, K, m1, S, K,
+                                  corrtype, pereff, fullrange, rhou, imp)
+  relvars_m1$m <- m1
+  relvars_m1$S <- S
+  relvars_m2 <- gridvals_small(m2, S, K, m2, S, K,
+                                  corrtype, pereff, fullrange, rhou, imp)
+  relvars_m2$m <- m2
+  relvars_m2$S <- S
+
+  relvars <- bind_rows(
+    relvars_m1,
+    relvars_m2
+  )
+  
+  if(fixedscale==TRUE){
+    fillopt <- scale_fill_continuous_divergingx(name="Relative efficiency ",
+                                                palette='RdBu', mid=1, rev=FALSE,
+                                                limits=limits, breaks=breaks)
+  }else{
+    fillopt <- scale_fill_continuous_divergingx(name="Relative efficiency ",
+                                                palette='RdBu', mid=1, rev=FALSE)
+  }
+  
+  m.labs <- c(paste("m = ", m1), paste("m = ", m2))
+  names(m.labs) <- c(m1, m2)
+  S.labs <- paste("S = ", S)
+  names(S.labs) <- S
+  
+  Kval <- ifelse(K==1, "", K)
+  if(rhou==0){
+    if(imp==FALSE){
+      title <- bquote(paste("Relative efficiency, ",
+                            var(hat(theta))[paste("SW(", .(S), ",", .(Kval), "k)")]/
+                              var(hat(theta))[paste("SC(", .(S), ",", .(Kval), "k,1,1)")]))
+    }else{
+      title <- bquote(paste("Relative efficiency, ",
+                            var(hat(theta))[paste("SW(", .(S), ",", .(Kval), "k)")]/
+                              var(hat(theta))[paste("SC(", .(S), ",", .(Kval), "k,1,1)")],
+                            ", w/ implementation periods"))
+    }
+  }else{
+    if(imp==FALSE){
+      title <- bquote(paste("Relative efficiency, ",
+                            var(hat(theta))[paste("SW(", .(S), ",", .(Kval), "k)")]/
+                              var(hat(theta))[paste("SC(", .(S), ",", .(Kval), "k,1,1)")],
+                            ", for ", rho[u], "=", .(rhou)))
+    }else{
+      title <- bquote(paste("Relative efficiency, ",
+                            var(hat(theta))[paste("SW(", .(S), ",", .(Kval), "k)")]/
+                              var(hat(theta))[paste("SC(", .(S), ",", .(Kval), "k,1,1)")],
+                            ", for ", rho[u], "=", .(rhou), ", w/ implementation periods"))
+    }
+  }
+
+  p <- ggplot(relvars, aes(x=r, y=rho, z=releffSCSW)) +
+    geom_tile(aes(fill=releffSCSW)) +
+    #    geom_contour_fill(breaks=breaks) +
+    geom_contour2(color="black", breaks=breaks) +
+    geom_text_contour(stroke = 0.15, size=3, rotate=FALSE, breaks=breaks,
+                      skip=0, label.placer=label_placer_fraction(0.5)) +
+    fillopt +
+    facet_grid(
+      m ~ S,
+      labeller = labeller(m = m.labs, S = S.labs)
+    ) +
+    scale_x_continuous(expand=c(0,0)) +
+    scale_y_continuous(expand=c(0,0)) +
+    theme(aspect.ratio=3/8,
+          panel.spacing = unit(1.5, "lines"),
+          legend.key.width = unit(1.5, "cm"),
+          legend.title=element_text(size=14), legend.text=element_text(size=14),
+          legend.position="bottom",
+          plot.title=element_text(hjust=0.5, size=16),
+          axis.title=element_text(size=14), axis.text=element_text(size=14),
+          strip.background = element_rect(
+            color="white", fill="white", linetype="solid"
+          ),
+          strip.text.x = element_text(size=12),
+          strip.text.y = element_text(size=12)) +
+    coord_fixed() + xlab(expression(paste("Cluster autocorrelation, ", r))) +
+    ylab(expression(paste("Within-period ICC, ", rho))) +
+    ggtitle(title)
+  
+  rng <- ifelse(fullrange, "full", "restricted")
+  corrstruct <- ifelse(corrtype==0, "BE", "DTD")
+  rhouval <- ifelse((0 < rhou && rhou < 1), strsplit(as.character(rhou), "\\.")[[1]][2],
+                    as.character(rhou))
+  impper <- ifelse(imp, "_implementation", "")
+  ggsave(paste0("plots/releff_SC_vs_SW_",
+                corrstruct, "_", pereff, "_", rng, "_S_", S, "_rhou_",
+                rhouval, impper, ".jpg"), p, width=9, height=5, units="in", dpi=800)
+  ggsave(paste0("plots/releff_SC_vs_SW_",
+                corrstruct, "_", pereff, "_", rng, "_S_", S, "_rhou_",
+                rhouval, impper, ".pdf"), p, width=9, height=5, units="in", dpi=600)
+  return(p)
+}
+
+releffSCSW_grid_multiplot_diffm_singleS <- function(S, K, corrtype, pereff,
+                                                    fixedscale=FALSE, limits=c(0,2),
+                                                    breaks=seq(0,2,0.2),
+                                                    fullrange=FALSE, rhou=0, imp=FALSE){
+  # Compare variances of complete SW designs and basic staircase designs with
+  # larger cluster-period sizes (the same total number of participants), for a
+  # range of correlation parameters, and for different cluster-period sizes
+  # Inputs:
+  #  S - number of unique treatment sequences
+  #  K - number of clusters randomised to each sequence
+  #  corrtype - within-cluster correlation structure type
+  #             (0=block-exchangeable, 1=exponential decay)
+  #  pereff - time period effect type
+  #           ('cat'=categorical period effects, 'lin'=linear period effects)
+  #  fixedscale - Use particular limits and breaks for colour scale (T/F)
+  #  limits - Range of values for colour scale shading
+  #  breaks - Indices for colour scale legend and contour lines
+  #  fullrange - Use full correlation parameter ranges (T/F)
+  #  rhou - correlation between a participant's repeated measurements
+  #          (default of 0 means each participant is measured just once)
+  # Output:
+  #  Contour plot of relative efficiencies (vartheta_SW/vartheta_SC)
+  
+  m1_SW <- 10
+  m1_SC <- ((S+1)/2)*m1_SW
+  m2_SW <- 100
+  m2_SC <- ((S+1)/2)*m2_SW
+  relvars_m1 <- gridvals_small(m1_SW, S, K, m1_SC, S, K,
+                                corrtype, pereff, fullrange, rhou, imp)
+  relvars_m1$m <- m1_SW
+  relvars_m1$S <- S
+  relvars_m2 <- gridvals_small(m2_SW, S, K, m2_SC, S, K,
+                                corrtype, pereff, fullrange, rhou, imp)
+  relvars_m2$m <- m2_SW
+  relvars_m2$S <- S
+  relvars <- bind_rows(
+    relvars_m1,
+    relvars_m2
+  )
+  
+  if(fixedscale==TRUE){
+    fillopt <- scale_fill_continuous_divergingx(name="Relative efficiency ",
+                                                palette='RdBu', mid=1, rev=FALSE,
+                                                limits=limits, breaks=breaks)
+  }else{
+    fillopt <- scale_fill_continuous_divergingx(name="Relative efficiency ",
+                                                palette='RdBu', mid=1, rev=FALSE)
+  }
+  
+  m.labs <- c(paste("mSW=10 \nmSC=", m1_SC), paste("mSW=100 \nmSC=", m2_SC))
+  names(m.labs) <- c(m1_SW, m2_SW)
+  S.labs <- paste("S = ", S)
+  names(S.labs) <- S
+
+  Kval <- ifelse(K==1, "", K)
+  if(rhou==0){
+    if(imp==FALSE){
+      title <- bquote(paste("Relative efficiency, ",
+                            var(hat(theta))[paste("SW(", .(S), ",", .(Kval), "k)")]/
+                              var(hat(theta))[paste("SC(", .(S), ",", .(Kval), "k,1,1)")]))
+    }else{
+      title <- bquote(paste("Relative efficiency, ",
+                            var(hat(theta))[paste("SW(", .(S), ",", .(Kval), "k)")]/
+                              var(hat(theta))[paste("SC(", .(S), ",", .(Kval), "k,1,1)")],
+                            ", w/ implementation periods"))
+    }
+  }else{
+    if(imp==FALSE){
+      title <- bquote(paste("Relative efficiency, ",
+                            var(hat(theta))[paste("SW(", .(S), ",", .(Kval), "k)")]/
+                              var(hat(theta))[paste("SC(", .(S), ",", .(Kval), "k,1,1)")],
+                            ", for ", rho[u], "=", .(rhou)))
+    }else{
+      title <- bquote(paste("Relative efficiency, ",
+                            var(hat(theta))[paste("SW(", .(S), ",", .(Kval), "k)")]/
+                              var(hat(theta))[paste("SC(", .(S), ",", .(Kval), "k,1,1)")],
+                            ", for ", rho[u], "=", .(rhou), ", w/ implementation periods"))
+    }
+  }
+
+  p <- ggplot(relvars, aes(x=r, y=rho, z=releffSCSW)) + 
+    geom_tile(aes(fill=releffSCSW)) +
+    #    geom_contour_fill(breaks=breaks) +
+    geom_contour2(color="black", breaks=breaks) +
+    geom_text_contour(stroke=0.15, size=3, rotate=FALSE, breaks=breaks, skip=0,
+                      label.placer=label_placer_fraction(0.5)) +
+    facet_grid(
+      m ~ S,
+      labeller = labeller(m = m.labs, S=S.labs)
+    ) +
+    fillopt +
+    scale_x_continuous(expand=c(0,0)) +
+    scale_y_continuous(expand=c(0,0)) +
+    theme(aspect.ratio=3/8,
+          panel.spacing = unit(1.5, "lines"),
+          legend.key.width = unit(2.5, "cm"),
+          legend.title=element_text(size=14), legend.text=element_text(size=14),
+          legend.position="bottom",
+          plot.title=element_text(hjust=0.5, size=16),
+          axis.title=element_text(size=14), axis.text=element_text(size=14),
+          strip.background = element_rect(
+            color="white", fill="white", linetype="solid"
+          ),
+          strip.text.x = element_text(size=12),
+          strip.text.y = element_text(size=12)) +
+    coord_fixed() + xlab(expression(paste("Cluster autocorrelation, ", r))) +
+    ylab(expression(paste("Within-period ICC, ", rho))) +
+    ggtitle(title)
+  
+  rng <- ifelse(fullrange, "full", "restricted")
+  corrstruct <- ifelse(corrtype==0, "BE", "DTD")
+  rhouval <- ifelse((0 < rhou && rhou < 1), strsplit(as.character(rhou), "\\.")[[1]][2],
+                    as.character(rhou))
+  impper <- ifelse(imp, "_implementation", "")
+  ggsave(paste0("plots/releff_diffm_SC_vs_SW_",
+                corrstruct, "_", pereff, "_", rng, "_S_", S, "_rhou_",
+                rhouval, impper, ".jpg"), p, width=9, height=5, units="in", dpi=800)
+  ggsave(paste0("plots/releff_diffm_SC_vs_SW_",
+                corrstruct, "_", pereff, "_", rng, "_S_", S, "_rhou_",
+                rhouval, impper, ".pdf"), p, width=9, height=5, units="in", dpi=600)
+  return(p)
+}
+
+releff_SW_extendedSC_singleS <- function(S, K_SW, corrtype, pereff,
+                                         fixedscale=FALSE, limits=c(0,2.5),
+                                         breaks=seq(0,2.5,0.5),
+                                         fullrange=FALSE, rhou=0, imp=FALSE){
+  # Compare variances of complete SW designs and basic staircase designs with
+  # more clusters (the same total number of participants), for a range of
+  # correlation parameters, and for different cluster-period sizes
+  # Inputs:
+  #  S - number of unique treatment sequences
+  #  K_SW - number of times each sequence is repeated for SW design
+  #  corrtype - within-cluster correlation structure type
+  #             (0=block-exchangeable, 1=exponential decay)
+  #  pereff - time period effect type
+  #           ('cat'=categorical period effects, 'lin'=linear period effects)
+  #  fixedscale - Use particular limits and breaks for colour scale (T/F)
+  #  limits - Range of values for colour scale shading
+  #  breaks - Indices for colour scale legend and contour lines
+  #  fullrange - Use full correlation parameter ranges (T/F)
+  #  rhou - correlation between a participant's repeated measurements
+  #          (default of 0 means each participant is measured just once)
+  # Output:
+  #  Contour plot of relative efficiencies (vartheta_SW/vartheta_SC)
+  
+  m1 <- 10
+  m2 <- 100
+  K_SC <- K_SW*(S+1)/2
+  relvars_m1 <- gridvals_small(m1, S, K_SW, m1, S, K_SC,
+                                corrtype, pereff, fullrange, rhou, imp)
+  relvars_m1$m <- m1
+  relvars_m1$S <- S
+  relvars_m2 <- gridvals_small(m2, S, K_SW, m2, S, K_SC,
+                                corrtype, pereff, fullrange, rhou, imp)
+  relvars_m2$m <- m2
+  relvars_m2$S <- S
+
+  relvars <- bind_rows(
+    relvars_m1,
+    relvars_m2
+  )
+  
+  if(fixedscale==TRUE){
+    fillopt <- scale_fill_continuous_divergingx(name="Relative efficiency ",
+                                                palette='RdBu', mid=1, rev=FALSE,
+                                                limits=limits, breaks=breaks)
+  }else{
+    fillopt <- scale_fill_continuous_divergingx(name="Relative efficiency ",
+                                                palette='RdBu', mid=1, rev=FALSE)
+  }
+  
+  S.labs <- paste("S = ", S, ", q = ", K_SC)
+  names(S.labs) <- S
+  m.labs <- c(paste("m = ", m1), paste("m = ", m2))
+  names(m.labs) <- c(m1, m2)
+  
+  KSW <- ifelse(K_SW==1, "", K_SW)
+  if(rhou==0){
+    if(imp==FALSE){
+      title <- bquote(paste("Relative efficiency, ",
+                            var(hat(theta))[paste("SW(", .(S), ",", .(KSW), "k)")]/
+                              var(hat(theta))[paste("SC(", .(S), ",", .(K_SC), "k,1,1)")]))
+    }else{
+      title <- bquote(paste("Relative efficiency, ",
+                            var(hat(theta))[paste("SW(", .(S), ",", .(KSW), "k)")]/
+                              var(hat(theta))[paste("SC(", .(S), ",", .(K_SC), "k,1,1)")],
+                            ", w/ implementation periods"))
+    }
+  }else{
+    if(imp==FALSE){
+      title <- bquote(paste("Relative efficiency, ",
+                            var(hat(theta))[paste("SW(", .(S), ",", .(KSW), "k)")]/
+                              var(hat(theta))[paste("SC(", .(S), ",", .(K_SC), "k,1,1)")],
+                            ", for ", rho[u], "=", .(rhou)))
+    }else{
+      title <- bquote(paste("Relative efficiency, ",
+                            var(hat(theta))[paste("SW(", .(S), ",", .(KSW), "k)")]/
+                              var(hat(theta))[paste("SC(", .(S), ",", .(K_SC), "k,1,1)")],
+                            ", for ", rho[u], "=", .(rhou), ", w/ implementation periods"))
+    }
+  }
+  
+  p <- ggplot(relvars, aes(x=r, y=rho, z=releffSCSW)) +
+    geom_tile(aes(fill=releffSCSW)) +
+    #    geom_contour_fill(breaks=breaks) +
+    geom_contour2(color="black", breaks=breaks) +
+    geom_text_contour(stroke=0.15, size=3, rotate=FALSE, breaks=breaks, skip=0,
+                      label.placer=label_placer_fraction(0.5)) +
+    fillopt +
+    facet_grid(
+      m ~ S,
+      labeller = labeller(m = m.labs, S = S.labs)
+    ) +
+    scale_x_continuous(expand=c(0,0)) +
+    scale_y_continuous(expand=c(0,0)) +
+    theme(aspect.ratio=3/8,
+          panel.spacing = unit(1.5, "lines"),
+          legend.key.width = unit(2.5, "cm"),
+          legend.title=element_text(size=14), legend.text=element_text(size=14),
+          legend.position="bottom",
+          plot.title=element_text(hjust=0.5, size=16),
+          axis.title=element_text(size=14), axis.text=element_text(size=14),
+          strip.background = element_rect(
+            color="white", fill="white", linetype="solid"
+          ),
+          strip.text.x = element_text(size=12),
+          strip.text.y = element_text(size=12)) +
+    coord_fixed() + xlab(expression(paste("Cluster autocorrelation, ", r))) +
+    ylab(expression(paste("Within-period ICC, ", rho))) +
+    ggtitle(title)
+  
+  rng <- ifelse(fullrange, "full", "restricted")
+  corrstruct <- ifelse(corrtype==0, "BE", "DTD")
+  rhouval <- ifelse((0 < rhou && rhou < 1), strsplit(as.character(rhou), "\\.")[[1]][2],
+                    as.character(rhou))
+  impper <- ifelse(imp, "_implementation", "")
+  ggsave(paste0("plots/releff_extendedSC_Sq11_vs_SW_S", K_SW, "_",
+                corrstruct, "_", pereff, "_", rng, "_S_", S, "_rhou_",
+                rhouval, impper, ".jpg"), p, width=9, height=5, units="in", dpi=800)
+  ggsave(paste0("plots/releff_extendedSC_Sq11_vs_SW_S", K_SW, "_",
+                corrstruct, "_", pereff, "_", rng, "_S_", S, "_rhou_",
                 rhouval, impper, ".pdf"), p, width=9, height=5, units="in", dpi=600)
   return(p)
 }

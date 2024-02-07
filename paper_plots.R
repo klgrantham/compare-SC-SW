@@ -97,6 +97,69 @@ pS9 <- releff_SW_extendedSC_diffS(S1=3, S2=9, K_SW=1, corrtype=0, pereff='cat',
         rhou=0, imp=FALSE)
 ggsave(paste0("plots/figureS9.pdf"), pS9, width=9, height=5, units="in", dpi=600)
 
+## Staircase vs stepped wedge, cohort designs ##
+
+# Figure S10: Block-exchangeable, categorical period effects, cohort w/ rhou=0.3
+pS10 <- releffSCSW_grid_multiplot_corr_diffS(S1=3, S2=9, K_SW=1, K_SC=1,
+         corrtype=0, pereff='cat', fixedscale=TRUE, limits=c(0,1),
+         breaks=seq(0,1,0.2), fullrange=FALSE, rhou=0.3, imp=FALSE)
+ggsave(paste0("plots/figureS10.pdf"), pS10, width=9, height=5, units="in", dpi=600)
+
+# Figure S11: Block-exchangeable, categorical period effects, cohort w/ rhou=0.7
+pS11 <- releffSCSW_grid_multiplot_corr_diffS(S1=3, S2=9, K_SW=1, K_SC=1,
+         corrtype=0, pereff='cat', fixedscale=TRUE, limits=c(0,1),
+         breaks=seq(0,1,0.2), fullrange=FALSE, rhou=0.7, imp=FALSE)
+ggsave(paste0("plots/figureS11.pdf"), pS11, width=9, height=5, units="in", dpi=600)
+
+# Figure S12: Block-exchangeable, categorical period effects, cohort w/ rhou=0.3
+pS12 <- releffSCSW_grid_multiplot_diffm_diffS(S1=3, S2=9, corrtype=0,
+         pereff='cat', fixedscale=TRUE, limits=c(0,2.2), breaks=seq(0,2.2,0.2),
+         fullrange=FALSE, rhou=0.3, imp=FALSE)
+ggsave(paste0("plots/figureS12.pdf"), pS12, width=9, height=5, units="in", dpi=600)
+
+# Figure S13: Block-exchangeable, categorical period effects, cohort w/ rhou=0.7
+pS13 <- releffSCSW_grid_multiplot_diffm_diffS(S1=3, S2=9, corrtype=0,
+          pereff='cat', fixedscale=TRUE, limits=c(0,2.2), breaks=seq(0,2.2,0.2),
+          fullrange=FALSE, rhou=0.7, imp=FALSE)
+ggsave(paste0("plots/figureS13.pdf"), pS13, width=9, height=5, units="in", dpi=600)
+
+# Figure S14: Block-exchangeable, categorical period effects, cohort w/ rhou=0.3
+pS14 <- releff_SW_extendedSC_diffS(S1=3, S2=9, K_SW=1, corrtype=0, pereff='cat',
+       fixedscale=TRUE, limits=c(0,2.4), breaks=seq(0,2.4,0.2), fullrange=FALSE,
+       rhou=0.3, imp=FALSE)
+ggsave(paste0("plots/figureS14.pdf"), pS14, width=9, height=5, units="in", dpi=600)
+
+# Figure S15: Block-exchangeable, categorical period effects, cohort w/ rhou=0.7
+pS15 <- releff_SW_extendedSC_diffS(S1=3, S2=9, K_SW=1, corrtype=0, pereff='cat',
+          fixedscale=TRUE, limits=c(0,2.4), breaks=seq(0,2.4,0.2), fullrange=FALSE,
+          rhou=0.7, imp=FALSE)
+ggsave(paste0("plots/figureS15.pdf"), pS15, width=9, height=5, units="in", dpi=600)
+
+## Staircase vs stepped wedge, with implementation periods ##
+
+# Figure S16: Embedded staircase vs. stepped wedge, block-exchangeable,
+#  categorical period effects, implementation periods
+# Note: We only consider 9-sequence designs here since we would not recommend a
+#       3-sequence design with implementation periods
+pS16 <- releffSCSW_grid_multiplot_corr_singleS(S=9, K=1, corrtype=0, pereff='cat',
+         fixedscale=TRUE, limits=c(0,1), breaks=seq(0,1,0.2), fullrange=FALSE,
+         rhou=0, imp=TRUE)
+ggsave(paste0("plots/figureS16.pdf"), pS16, width=9, height=5, units="in", dpi=600)
+
+# Figure S17: Staircase with larger cluster-period size vs. stepped wedge,
+#  block-exchangeable, categorical period effects, implementation periods
+pS17 <- releffSCSW_grid_multiplot_diffm_singleS(S=9, K=1, corrtype=0,
+          pereff='cat', fixedscale=TRUE, limits=c(0,2), breaks=seq(0,2,0.2),
+          fullrange=FALSE, rhou=0, imp=TRUE)
+ggsave(paste0("plots/figureS17.pdf"), pS17, width=9, height=5, units="in", dpi=600)
+
+# Figure S18: Staircase with more clusters vs. stepped wedge,
+#  block-exchangeable, categorical period effects, implementation periods
+pS18 <- releff_SW_extendedSC_singleS(S=9, K_SW=1, corrtype=0, pereff='cat',
+         fixedscale=TRUE, limits=c(0,2.4), breaks=seq(0,2.4,0.2),
+         fullrange=FALSE, rhou=0, imp=TRUE)
+ggsave(paste0("plots/figureS18.pdf"), pS18, width=9, height=5, units="in", dpi=600)
+
 
 ## Trial examples
 
