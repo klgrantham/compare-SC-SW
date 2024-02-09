@@ -254,15 +254,18 @@ releffSCSW_grid_multiplot_corr_diffS <- function(S1, S2, K_SW, K_SC,
   
   KSW <- ifelse(K_SW==1, "", K_SW)
   KSC <- ifelse(K_SC==1, "", K_SC)
-  if(rhou==0){
-    title <- bquote(paste("Relative efficiency, ",
-                          var(hat(theta))[paste("SW(S,", .(KSW), "k)")]/
-                            var(hat(theta))[paste("SC(S,", .(KSC), "k,1,1)")]))
+  title <- bquote(paste("Relative efficiency, ",
+                        var(hat(theta))[paste("SW(S,", .(KSW), "k)")]/
+                          var(hat(theta))[paste("SC(S,", .(KSC), "k,1,1)")]))
+  if(rhou==0 && imp){
+    stitle <- "Including implementation periods"
+  }else if(rhou!=0 && imp){
+    stitle <- bquote(paste("Closed cohort with ", rho[u], "=", .(rhou),
+                           ", including implementation periods"))
+  }else if(rhou!=0 && isFALSE(imp)){
+    stitle <- bquote(paste("Closed cohort with ", rho[u], "=", .(rhou)))
   }else{
-    title <- bquote(paste("Relative efficiency, ",
-                                 var(hat(theta))[paste("SW(S,", .(KSW), "k)")]/
-                                   var(hat(theta))[paste("SC(S,", .(KSC), "k,1,1)")],
-                                 ", for ", rho[u], "=", .(rhou)))
+    stitle <- NULL
   }
 
   p <- ggplot(relvars, aes(x=r, y=rho, z=releffSCSW)) +
@@ -284,6 +287,7 @@ releffSCSW_grid_multiplot_corr_diffS <- function(S1, S2, K_SW, K_SC,
           legend.title=element_text(size=14), legend.text=element_text(size=14),
           legend.position="bottom",
           plot.title=element_text(hjust=0.5, size=16),
+          plot.subtitle=element_text(hjust=0.5, size=14),
           axis.title=element_text(size=14), axis.text=element_text(size=14),
           strip.background = element_rect(
             color="white", fill="white", linetype="solid"
@@ -292,7 +296,7 @@ releffSCSW_grid_multiplot_corr_diffS <- function(S1, S2, K_SW, K_SC,
           strip.text.y = element_text(size=12)) +
     coord_fixed() + xlab(expression(paste("Cluster autocorrelation, ", r))) +
     ylab(expression(paste("Within-period ICC, ", rho))) +
-    ggtitle(title)
+    ggtitle(title, subtitle=stitle)
 
   rng <- ifelse(fullrange, "full", "restricted")
   corrstruct <- ifelse(corrtype==0, "BE", "DTD")
@@ -376,15 +380,18 @@ releffSCSW_grid_multiplot_diffm_diffS <- function(S1, S2,
   m.labs <- c("mSW=10 \nmSC=5*(S+1)", "mSW=100 \nmSC=50*(S+1)")
   names(m.labs) <- c(m1_SW, m2_SW)
   
-  if(rhou==0){
-    title <- bquote(paste("Relative efficiency, ",
-                          var(hat(theta))["SW(S,k)"]/
-                            var(hat(theta))["SC(S,k,1,1)"]))
+  title <- bquote(paste("Relative efficiency, ",
+                        var(hat(theta))["SW(S,k)"]/
+                          var(hat(theta))["SC(S,k,1,1)"]))
+  if(rhou==0 && imp){
+    stitle <- "Including implementation periods"
+  }else if(rhou!=0 && imp){
+    stitle <- bquote(paste("Closed cohort with ", rho[u], "=", .(rhou),
+                           ", including implementation periods"))
+  }else if(rhou!=0 && isFALSE(imp)){
+    stitle <- bquote(paste("Closed cohort with ", rho[u], "=", .(rhou)))
   }else{
-    title <- bquote(paste("Relative efficiency, ",
-                          var(hat(theta))["SW(S,k)"]/
-                            var(hat(theta))["SC(S,k,1,1)"],
-                          ", for ", rho[u], "=", .(rhou)))
+    stitle <- NULL
   }
   
   p <- ggplot(relvars, aes(x=r, y=rho, z=releffSCSW)) + 
@@ -406,6 +413,7 @@ releffSCSW_grid_multiplot_diffm_diffS <- function(S1, S2,
           legend.title=element_text(size=14), legend.text=element_text(size=14),
           legend.position="bottom",
           plot.title=element_text(hjust=0.5, size=16),
+          plot.subtitle=element_text(hjust=0.5, size=14),
           axis.title=element_text(size=14), axis.text=element_text(size=14),
           strip.background = element_rect(
             color="white", fill="white", linetype="solid"
@@ -414,7 +422,7 @@ releffSCSW_grid_multiplot_diffm_diffS <- function(S1, S2,
           strip.text.y = element_text(size=12)) +
     coord_fixed() + xlab(expression(paste("Cluster autocorrelation, ", r))) +
     ylab(expression(paste("Within-period ICC, ", rho))) +
-    ggtitle(title)
+    ggtitle(title, subtitle=stitle)
   
   rng <- ifelse(fullrange, "full", "restricted")
   corrstruct <- ifelse(corrtype==0, "BE", "DTD")
@@ -502,15 +510,15 @@ releff_SW_extendedSC_diffS <- function(S1, S2, K_SW,
   title <- bquote(paste("Relative efficiency, ",
                         var(hat(theta))[paste("SW(S,", .(KSW), "k)")]/
                           var(hat(theta))["SC(S,qk,1,1)"]))
-  if(rhou==0){
-    title <- bquote(paste("Relative efficiency, ",
-                          var(hat(theta))[paste("SW(S,", .(KSW), "k)")]/
-                            var(hat(theta))["SC(S,qk,1,1)"]))
+  if(rhou==0 && imp){
+    stitle <- "Including implementation periods"
+  }else if(rhou!=0 && imp){
+    stitle <- bquote(paste("Closed cohort with ", rho[u], "=", .(rhou),
+                           ", including implementation periods"))
+  }else if(rhou!=0 && isFALSE(imp)){
+    stitle <- bquote(paste("Closed cohort with ", rho[u], "=", .(rhou)))
   }else{
-    title <- bquote(paste("Relative efficiency, ",
-                          var(hat(theta))[paste("SW(S,", .(KSW), "k)")]/
-                            var(hat(theta))["SC(S,qk,1,1)"],
-                    ", for ", rho[u], "=", .(rhou)))
+    stitle <- NULL
   }
   
   p <- ggplot(relvars, aes(x=r, y=rho, z=releffSCSW)) +
@@ -532,6 +540,7 @@ releff_SW_extendedSC_diffS <- function(S1, S2, K_SW,
           legend.title=element_text(size=14), legend.text=element_text(size=14),
           legend.position="bottom",
           plot.title=element_text(hjust=0.5, size=16),
+          plot.subtitle=element_text(hjust=0.5, size=14),
           axis.title=element_text(size=14), axis.text=element_text(size=14),
           strip.background = element_rect(
             color="white", fill="white", linetype="solid"
@@ -540,7 +549,7 @@ releff_SW_extendedSC_diffS <- function(S1, S2, K_SW,
           strip.text.y = element_text(size=12)) +
     coord_fixed() + xlab(expression(paste("Cluster autocorrelation, ", r))) +
     ylab(expression(paste("Within-period ICC, ", rho))) +
-    ggtitle(title)
+    ggtitle(title, subtitle=stitle)
   
   rng <- ifelse(fullrange, "full", "restricted")
   corrstruct <- ifelse(corrtype==0, "BE", "DTD")
@@ -610,31 +619,20 @@ releffSCSW_grid_multiplot_corr_singleS <- function(S, K, corrtype, pereff,
   names(S.labs) <- S
   
   Kval <- ifelse(K==1, "", K)
-  if(rhou==0){
-    if(imp==FALSE){
-      title <- bquote(paste("Relative efficiency, ",
-                            var(hat(theta))[paste("SW(", .(S), ",", .(Kval), "k)")]/
-                              var(hat(theta))[paste("SC(", .(S), ",", .(Kval), "k,1,1)")]))
-    }else{
-      title <- bquote(paste("Relative efficiency, ",
-                            var(hat(theta))[paste("SW(", .(S), ",", .(Kval), "k)")]/
-                              var(hat(theta))[paste("SC(", .(S), ",", .(Kval), "k,1,1)")],
-                            ", w/ implementation periods"))
-    }
+  title <- bquote(paste("Relative efficiency, ",
+                        var(hat(theta))[paste("SW(", .(S), ",", .(Kval), "k)")]/
+                          var(hat(theta))[paste("SC(", .(S), ",", .(Kval), "k,1,1)")]))
+  if(rhou==0 && imp){
+    stitle <- "Including implementation periods"
+  }else if(rhou!=0 && imp){
+    stitle <- bquote(paste("Closed cohort with ", rho[u], "=", .(rhou),
+                           ", including implementation periods"))
+  }else if(rhou!=0 && isFALSE(imp)){
+    stitle <- bquote(paste("Closed cohort with ", rho[u], "=", .(rhou)))
   }else{
-    if(imp==FALSE){
-      title <- bquote(paste("Relative efficiency, ",
-                            var(hat(theta))[paste("SW(", .(S), ",", .(Kval), "k)")]/
-                              var(hat(theta))[paste("SC(", .(S), ",", .(Kval), "k,1,1)")],
-                            ", for ", rho[u], "=", .(rhou)))
-    }else{
-      title <- bquote(paste("Relative efficiency, ",
-                            var(hat(theta))[paste("SW(", .(S), ",", .(Kval), "k)")]/
-                              var(hat(theta))[paste("SC(", .(S), ",", .(Kval), "k,1,1)")],
-                            ", for ", rho[u], "=", .(rhou), ", w/ implementation periods"))
-    }
+    stitle <- NULL
   }
-
+  
   p <- ggplot(relvars, aes(x=r, y=rho, z=releffSCSW)) +
     geom_tile(aes(fill=releffSCSW)) +
     #    geom_contour_fill(breaks=breaks) +
@@ -654,6 +652,7 @@ releffSCSW_grid_multiplot_corr_singleS <- function(S, K, corrtype, pereff,
           legend.title=element_text(size=14), legend.text=element_text(size=14),
           legend.position="bottom",
           plot.title=element_text(hjust=0.5, size=16),
+          plot.subtitle=element_text(hjust=0.5, size=14),
           axis.title=element_text(size=14), axis.text=element_text(size=14),
           strip.background = element_rect(
             color="white", fill="white", linetype="solid"
@@ -662,7 +661,7 @@ releffSCSW_grid_multiplot_corr_singleS <- function(S, K, corrtype, pereff,
           strip.text.y = element_text(size=12)) +
     coord_fixed() + xlab(expression(paste("Cluster autocorrelation, ", r))) +
     ylab(expression(paste("Within-period ICC, ", rho))) +
-    ggtitle(title)
+    ggtitle(title, subtitle=stitle)
   
   rng <- ifelse(fullrange, "full", "restricted")
   corrstruct <- ifelse(corrtype==0, "BE", "DTD")
@@ -733,31 +732,20 @@ releffSCSW_grid_multiplot_diffm_singleS <- function(S, K, corrtype, pereff,
   names(S.labs) <- S
 
   Kval <- ifelse(K==1, "", K)
-  if(rhou==0){
-    if(imp==FALSE){
-      title <- bquote(paste("Relative efficiency, ",
-                            var(hat(theta))[paste("SW(", .(S), ",", .(Kval), "k)")]/
-                              var(hat(theta))[paste("SC(", .(S), ",", .(Kval), "k,1,1)")]))
-    }else{
-      title <- bquote(paste("Relative efficiency, ",
-                            var(hat(theta))[paste("SW(", .(S), ",", .(Kval), "k)")]/
-                              var(hat(theta))[paste("SC(", .(S), ",", .(Kval), "k,1,1)")],
-                            ", w/ implementation periods"))
-    }
+  title <- bquote(paste("Relative efficiency, ",
+                        var(hat(theta))[paste("SW(", .(S), ",", .(Kval), "k)")]/
+                          var(hat(theta))[paste("SC(", .(S), ",", .(Kval), "k,1,1)")]))
+  if(rhou==0 && imp){
+    stitle <- "Including implementation periods"
+  }else if(rhou!=0 && imp){
+    stitle <- bquote(paste("Closed cohort with ", rho[u], "=", .(rhou),
+                           ", including implementation periods"))
+  }else if(rhou!=0 && isFALSE(imp)){
+    stitle <- bquote(paste("Closed cohort with ", rho[u], "=", .(rhou)))
   }else{
-    if(imp==FALSE){
-      title <- bquote(paste("Relative efficiency, ",
-                            var(hat(theta))[paste("SW(", .(S), ",", .(Kval), "k)")]/
-                              var(hat(theta))[paste("SC(", .(S), ",", .(Kval), "k,1,1)")],
-                            ", for ", rho[u], "=", .(rhou)))
-    }else{
-      title <- bquote(paste("Relative efficiency, ",
-                            var(hat(theta))[paste("SW(", .(S), ",", .(Kval), "k)")]/
-                              var(hat(theta))[paste("SC(", .(S), ",", .(Kval), "k,1,1)")],
-                            ", for ", rho[u], "=", .(rhou), ", w/ implementation periods"))
-    }
+    stitle <- NULL
   }
-
+  
   p <- ggplot(relvars, aes(x=r, y=rho, z=releffSCSW)) + 
     geom_tile(aes(fill=releffSCSW)) +
     #    geom_contour_fill(breaks=breaks) +
@@ -777,6 +765,7 @@ releffSCSW_grid_multiplot_diffm_singleS <- function(S, K, corrtype, pereff,
           legend.title=element_text(size=14), legend.text=element_text(size=14),
           legend.position="bottom",
           plot.title=element_text(hjust=0.5, size=16),
+          plot.subtitle=element_text(hjust=0.5, size=14),
           axis.title=element_text(size=14), axis.text=element_text(size=14),
           strip.background = element_rect(
             color="white", fill="white", linetype="solid"
@@ -785,7 +774,7 @@ releffSCSW_grid_multiplot_diffm_singleS <- function(S, K, corrtype, pereff,
           strip.text.y = element_text(size=12)) +
     coord_fixed() + xlab(expression(paste("Cluster autocorrelation, ", r))) +
     ylab(expression(paste("Within-period ICC, ", rho))) +
-    ggtitle(title)
+    ggtitle(title, subtitle=stitle)
   
   rng <- ifelse(fullrange, "full", "restricted")
   corrstruct <- ifelse(corrtype==0, "BE", "DTD")
@@ -856,29 +845,18 @@ releff_SW_extendedSC_singleS <- function(S, K_SW, corrtype, pereff,
   names(m.labs) <- c(m1, m2)
   
   KSW <- ifelse(K_SW==1, "", K_SW)
-  if(rhou==0){
-    if(imp==FALSE){
-      title <- bquote(paste("Relative efficiency, ",
-                            var(hat(theta))[paste("SW(", .(S), ",", .(KSW), "k)")]/
-                              var(hat(theta))[paste("SC(", .(S), ",", .(K_SC), "k,1,1)")]))
-    }else{
-      title <- bquote(paste("Relative efficiency, ",
-                            var(hat(theta))[paste("SW(", .(S), ",", .(KSW), "k)")]/
-                              var(hat(theta))[paste("SC(", .(S), ",", .(K_SC), "k,1,1)")],
-                            ", w/ implementation periods"))
-    }
+  title <- bquote(paste("Relative efficiency, ",
+                        var(hat(theta))[paste("SW(", .(S), ",", .(KSW), "k)")]/
+                          var(hat(theta))[paste("SC(", .(S), ",", .(K_SC), "k,1,1)")]))
+  if(rhou==0 && imp){
+    stitle <- "Including implementation periods"
+  }else if(rhou!=0 && imp){
+    stitle <- bquote(paste("Closed cohort with ", rho[u], "=", .(rhou),
+                           ", including implementation periods"))
+  }else if(rhou!=0 && isFALSE(imp)){
+    stitle <- bquote(paste("Closed cohort with ", rho[u], "=", .(rhou)))
   }else{
-    if(imp==FALSE){
-      title <- bquote(paste("Relative efficiency, ",
-                            var(hat(theta))[paste("SW(", .(S), ",", .(KSW), "k)")]/
-                              var(hat(theta))[paste("SC(", .(S), ",", .(K_SC), "k,1,1)")],
-                            ", for ", rho[u], "=", .(rhou)))
-    }else{
-      title <- bquote(paste("Relative efficiency, ",
-                            var(hat(theta))[paste("SW(", .(S), ",", .(KSW), "k)")]/
-                              var(hat(theta))[paste("SC(", .(S), ",", .(K_SC), "k,1,1)")],
-                            ", for ", rho[u], "=", .(rhou), ", w/ implementation periods"))
-    }
+    stitle <- NULL
   }
   
   p <- ggplot(relvars, aes(x=r, y=rho, z=releffSCSW)) +
@@ -900,6 +878,7 @@ releff_SW_extendedSC_singleS <- function(S, K_SW, corrtype, pereff,
           legend.title=element_text(size=14), legend.text=element_text(size=14),
           legend.position="bottom",
           plot.title=element_text(hjust=0.5, size=16),
+          plot.subtitle=element_text(hjust=0.5, size=14),
           axis.title=element_text(size=14), axis.text=element_text(size=14),
           strip.background = element_rect(
             color="white", fill="white", linetype="solid"
@@ -908,7 +887,7 @@ releff_SW_extendedSC_singleS <- function(S, K_SW, corrtype, pereff,
           strip.text.y = element_text(size=12)) +
     coord_fixed() + xlab(expression(paste("Cluster autocorrelation, ", r))) +
     ylab(expression(paste("Within-period ICC, ", rho))) +
-    ggtitle(title)
+    ggtitle(title, subtitle=stitle)
   
   rng <- ifelse(fullrange, "full", "restricted")
   corrstruct <- ifelse(corrtype==0, "BE", "DTD")
