@@ -84,7 +84,7 @@ gridvals_small <- function(m_SW, S_SW, reps_SW, m_SC, S_SC, reps_SC,
 }
 
 corr_grid_multiplot <- function(fixedscale=TRUE, limits=c(0,1),
-                                breaks=seq(0,1,0.2), fullrange=FALSE){
+                                breaks=seq(0,1,0.2), fullrange=FALSE, rhou=0){
   
   if(fullrange==TRUE){
     rhovals <- seq(0.01, 0.99, 0.01)
@@ -95,14 +95,14 @@ corr_grid_multiplot <- function(fixedscale=TRUE, limits=c(0,1),
     rvals <- seq(0.2, 1, 0.05)
     mvals <- c(10, 100)
   }
-  vars <- expand.grid(rho=rhovals, r=rvals, mvals=mvals)
+  vars <- expand.grid(rho=rhovals, r=rvals, mvals=mvals, rhou=rhou)
   
   vars$m <- ifelse(vars$mvals==10, "m = 10", "m = 100")
   
   vars$corr <- with(
     vars,
     sapply(1:nrow(vars), function(j){
-      psi_corr(mvals[j], rho[j], r[j])
+      psi_corr(mvals[j], rho[j], r[j], rhou[j])
     }
     )
   )
@@ -115,9 +115,18 @@ corr_grid_multiplot <- function(fixedscale=TRUE, limits=c(0,1),
     fillopt <- scale_fill_distiller(name="Correlation",
                                     palette="YlOrRd", direction=1)
   }
+  
+  if(rhou!=0){
+    stitle <- bquote(paste("Closed cohort with ", rho[u], "=", .(rhou)))
+  }else{
+    stitle <- NULL
+  }
 
-  p <- ggplot(vars, aes(x=r, y=rho)) + 
+  p <- ggplot(vars, aes(x=r, y=rho, z=corr)) + 
     geom_tile(aes(fill=corr)) +
+    geom_contour2(color="black", breaks=breaks) +
+    geom_text_contour(stroke = 0.15, size=3, rotate=FALSE, breaks=breaks,
+                      skip=0, label.placer=label_placer_fraction(0.5)) +
     facet_grid(m ~ .) +
     fillopt +
     scale_x_continuous(expand=c(0,0)) +
@@ -127,6 +136,7 @@ corr_grid_multiplot <- function(fixedscale=TRUE, limits=c(0,1),
           legend.title=element_text(size=14), legend.text=element_text(size=14),
           legend.position="bottom",
           plot.title=element_text(hjust=0.5, size=16),
+          plot.subtitle=element_text(hjust=0.5, size=14),
           axis.title=element_text(size=14), axis.text=element_text(size=14),
           strip.background = element_rect(
             color="white", fill="white", linetype="solid"
@@ -134,11 +144,14 @@ corr_grid_multiplot <- function(fixedscale=TRUE, limits=c(0,1),
           strip.text.x = element_text(size = 10),
           strip.text.y = element_text(size=10)) +
     coord_fixed() + xlab(expression(paste("Cluster autocorrelation, ", r))) + ylab(expression(paste("Within-period ICC, ", rho))) +
-    ggtitle(expression(paste("Correlation between cluster-period means, ", psi)))
+    ggtitle(expression(paste("Correlation between cluster-period means, ", psi)),
+            subtitle=stitle)
   
   rng <- ifelse(fullrange, "full", "restricted")
+  rhouval <- ifelse((0 < rhou && rhou < 1), strsplit(as.character(rhou), "\\.")[[1]][2],
+                    as.character(rhou))
   
-  ggsave(paste0("plots/corr_m10_m100_", rng, ".jpg"),
+  ggsave(paste0("plots/corr_m10_m100_", rng, "_rhou_", rhouval, ".jpg"),
          p, width=6, height=5, units="in", dpi=800)
   return(p)
 }
@@ -255,8 +268,8 @@ releffSCSW_grid_multiplot_corr_diffS <- function(S1, S2, K_SW, K_SC,
   KSW <- ifelse(K_SW==1, "", K_SW)
   KSC <- ifelse(K_SC==1, "", K_SC)
   title <- bquote(paste("Relative efficiency, ",
-                        var(hat(theta))[paste("SW(S,", .(KSW), "k)")]/
-                          var(hat(theta))[paste("SC(S,", .(KSC), "k,1,1)")]))
+                        var(hat(theta))[paste("SW(S,", .(KSW), "K)")]/
+                          var(hat(theta))[paste("SC(S,", .(KSC), "K,1,1)")]))
   if(rhou==0 && imp){
     stitle <- "Including implementation periods"
   }else if(rhou!=0 && imp){
@@ -381,8 +394,8 @@ releffSCSW_grid_multiplot_diffm_diffS <- function(S1, S2,
   names(m.labs) <- c(m1_SW, m2_SW)
   
   title <- bquote(paste("Relative efficiency, ",
-                        var(hat(theta))["SW(S,k)"]/
-                          var(hat(theta))["SC(S,k,1,1)"]))
+                        var(hat(theta))["SW(S,K)"]/
+                          var(hat(theta))["SC(S,K,1,1)"]))
   if(rhou==0 && imp){
     stitle <- "Including implementation periods"
   }else if(rhou!=0 && imp){
@@ -508,8 +521,8 @@ releff_SW_extendedSC_diffS <- function(S1, S2, K_SW,
   
   KSW <- ifelse(K_SW==1, "", K_SW)
   title <- bquote(paste("Relative efficiency, ",
-                        var(hat(theta))[paste("SW(S,", .(KSW), "k)")]/
-                          var(hat(theta))["SC(S,qk,1,1)"]))
+                        var(hat(theta))[paste("SW(S,", .(KSW), "K)")]/
+                          var(hat(theta))["SC(S,qK,1,1)"]))
   if(rhou==0 && imp){
     stitle <- "Including implementation periods"
   }else if(rhou!=0 && imp){
@@ -620,8 +633,8 @@ releffSCSW_grid_multiplot_corr_singleS <- function(S, K, corrtype, pereff,
   
   Kval <- ifelse(K==1, "", K)
   title <- bquote(paste("Relative efficiency, ",
-                        var(hat(theta))[paste("SW(", .(S), ",", .(Kval), "k)")]/
-                          var(hat(theta))[paste("SC(", .(S), ",", .(Kval), "k,1,1)")]))
+                        var(hat(theta))[paste("SW(", .(S), ",", .(Kval), "K)")]/
+                          var(hat(theta))[paste("SC(", .(S), ",", .(Kval), "K,1,1)")]))
   if(rhou==0 && imp){
     stitle <- "Including implementation periods"
   }else if(rhou!=0 && imp){
@@ -647,7 +660,7 @@ releffSCSW_grid_multiplot_corr_singleS <- function(S, K, corrtype, pereff,
     scale_x_continuous(expand=c(0,0)) +
     scale_y_continuous(expand=c(0,0)) +
     theme(aspect.ratio=3/8,
-          panel.spacing = unit(1.5, "lines"),
+#          panel.spacing = unit(1.5, "lines"),
           legend.key.width = unit(1.5, "cm"),
           legend.title=element_text(size=14), legend.text=element_text(size=14),
           legend.position="bottom",
@@ -670,10 +683,10 @@ releffSCSW_grid_multiplot_corr_singleS <- function(S, K, corrtype, pereff,
   impper <- ifelse(imp, "_implementation", "")
   ggsave(paste0("plots/releff_SC_vs_SW_",
                 corrstruct, "_", pereff, "_", rng, "_S_", S, "_rhou_",
-                rhouval, impper, ".jpg"), p, width=9, height=5, units="in", dpi=800)
+                rhouval, impper, ".jpg"), p, width=6, height=5, units="in", dpi=800)
   ggsave(paste0("plots/releff_SC_vs_SW_",
                 corrstruct, "_", pereff, "_", rng, "_S_", S, "_rhou_",
-                rhouval, impper, ".pdf"), p, width=9, height=5, units="in", dpi=600)
+                rhouval, impper, ".pdf"), p, width=6, height=5, units="in", dpi=600)
   return(p)
 }
 
@@ -733,8 +746,8 @@ releffSCSW_grid_multiplot_diffm_singleS <- function(S, K, corrtype, pereff,
 
   Kval <- ifelse(K==1, "", K)
   title <- bquote(paste("Relative efficiency, ",
-                        var(hat(theta))[paste("SW(", .(S), ",", .(Kval), "k)")]/
-                          var(hat(theta))[paste("SC(", .(S), ",", .(Kval), "k,1,1)")]))
+                        var(hat(theta))[paste("SW(", .(S), ",", .(Kval), "K)")]/
+                          var(hat(theta))[paste("SC(", .(S), ",", .(Kval), "K,1,1)")]))
   if(rhou==0 && imp){
     stitle <- "Including implementation periods"
   }else if(rhou!=0 && imp){
@@ -760,8 +773,8 @@ releffSCSW_grid_multiplot_diffm_singleS <- function(S, K, corrtype, pereff,
     scale_x_continuous(expand=c(0,0)) +
     scale_y_continuous(expand=c(0,0)) +
     theme(aspect.ratio=3/8,
-          panel.spacing = unit(1.5, "lines"),
-          legend.key.width = unit(2.5, "cm"),
+#          panel.spacing = unit(1.5, "lines"),
+          legend.key.width = unit(1.5, "cm"),
           legend.title=element_text(size=14), legend.text=element_text(size=14),
           legend.position="bottom",
           plot.title=element_text(hjust=0.5, size=16),
@@ -783,10 +796,10 @@ releffSCSW_grid_multiplot_diffm_singleS <- function(S, K, corrtype, pereff,
   impper <- ifelse(imp, "_implementation", "")
   ggsave(paste0("plots/releff_diffm_SC_vs_SW_",
                 corrstruct, "_", pereff, "_", rng, "_S_", S, "_rhou_",
-                rhouval, impper, ".jpg"), p, width=9, height=5, units="in", dpi=800)
+                rhouval, impper, ".jpg"), p, width=7, height=5, units="in", dpi=800)
   ggsave(paste0("plots/releff_diffm_SC_vs_SW_",
                 corrstruct, "_", pereff, "_", rng, "_S_", S, "_rhou_",
-                rhouval, impper, ".pdf"), p, width=9, height=5, units="in", dpi=600)
+                rhouval, impper, ".pdf"), p, width=7, height=5, units="in", dpi=600)
   return(p)
 }
 
@@ -846,8 +859,8 @@ releff_SW_extendedSC_singleS <- function(S, K_SW, corrtype, pereff,
   
   KSW <- ifelse(K_SW==1, "", K_SW)
   title <- bquote(paste("Relative efficiency, ",
-                        var(hat(theta))[paste("SW(", .(S), ",", .(KSW), "k)")]/
-                          var(hat(theta))[paste("SC(", .(S), ",", .(K_SC), "k,1,1)")]))
+                        var(hat(theta))[paste("SW(", .(S), ",", .(KSW), "K)")]/
+                          var(hat(theta))[paste("SC(", .(S), ",", .(K_SC), "K,1,1)")]))
   if(rhou==0 && imp){
     stitle <- "Including implementation periods"
   }else if(rhou!=0 && imp){
@@ -873,8 +886,8 @@ releff_SW_extendedSC_singleS <- function(S, K_SW, corrtype, pereff,
     scale_x_continuous(expand=c(0,0)) +
     scale_y_continuous(expand=c(0,0)) +
     theme(aspect.ratio=3/8,
-          panel.spacing = unit(1.5, "lines"),
-          legend.key.width = unit(2.5, "cm"),
+#          panel.spacing = unit(1.5, "lines"),
+          legend.key.width = unit(1.5, "cm"),
           legend.title=element_text(size=14), legend.text=element_text(size=14),
           legend.position="bottom",
           plot.title=element_text(hjust=0.5, size=16),
@@ -896,9 +909,119 @@ releff_SW_extendedSC_singleS <- function(S, K_SW, corrtype, pereff,
   impper <- ifelse(imp, "_implementation", "")
   ggsave(paste0("plots/releff_extendedSC_Sq11_vs_SW_S", K_SW, "_",
                 corrstruct, "_", pereff, "_", rng, "_S_", S, "_rhou_",
-                rhouval, impper, ".jpg"), p, width=9, height=5, units="in", dpi=800)
+                rhouval, impper, ".jpg"), p, width=7, height=5, units="in", dpi=800)
   ggsave(paste0("plots/releff_extendedSC_Sq11_vs_SW_S", K_SW, "_",
                 corrstruct, "_", pereff, "_", rng, "_S_", S, "_rhou_",
-                rhouval, impper, ".pdf"), p, width=9, height=5, units="in", dpi=600)
+                rhouval, impper, ".pdf"), p, width=7, height=5, units="in", dpi=600)
+  return(p)
+}
+
+releffSC_SW_psi <- function(Svals, K_SW, m, rho0, pereff, diffK=FALSE){
+  # Calculates the relative efficiency (variance of SW to SC), for all
+  # combinations of psi and S values
+  
+  psivals <- seq(0, 0.995, 0.005)
+  vals <- expand.grid(psi=psivals, S=Svals, K_SW=K_SW)
+
+  if(diffK){
+    vals <- vals %>%
+      mutate(
+        K_SC = (S+1)/2
+      )
+  }else{
+    vals <- vals %>%
+      mutate(
+        K_SC = K_SW
+      )
+  }
+    
+  vals$varSW <- with(
+    vals,
+    sapply(1:nrow(vals), function(j){
+      VarSW_alt_psi(psi[j], S[j], K_SW[j], m, rho0)
+    }
+    )
+  )
+
+  if(pereff=='cat'){
+    vals$varSC <- with(
+      vals,
+      sapply(1:nrow(vals), function(j){
+        VarSCcat_psi(psi[j], S[j], K_SC[j], m, rho0)
+      }
+      )
+    )
+  }else if(pereff=='lin'){
+    vals$varSC <- with(
+      vals,
+      sapply(1:nrow(vals), function(j){
+        VarSClin_psi(psi[j], S[j], K_SC[j], m, rho0)
+      }
+      )
+    )
+  }
+
+  vals <- vals %>%
+    mutate(
+      releffSCvsSW = varSW/varSC
+    )
+  return(vals)
+}
+
+RE_lines_psi <- function(Svals, K_SW, pereff, diffK=FALSE){
+  # Inputs:
+  #  Svals - different numbers of sequences to plot together, e.g. c(3,6)
+  #  K - number of clusters to randomise to each sequence
+  #  m - number of subjects per cluster-period
+  #  rho0 - within-period intracluster correlation
+  #  pereff - time period effect type
+  #           ('cat'=categorical period effects, 'lin'=linear period effects)
+  # Output:
+  #  Plot of relative efficiencies for designs with different numbers of sequences
+  # Assumptions:
+  #  Total variance of 1
+  #  Block-exchangeable intracluster correlation structure
+  
+  # Note: RE is independent of m and rho0 for comparisons of stepped wedge with
+  #       embedded and extended staircase designs
+  REs <- releffSC_SW_psi(Svals=Svals, K_SW=K_SW, m=10, rho0=0.05, pereff=pereff, diffK=diffK)
+  
+  Kval <- ifelse(K_SW==1, "", K_SW)
+  if(length(Svals)==1 && diffK==FALSE){
+    title <- bquote(paste("Relative efficiency, ",
+                          var(hat(theta))[paste("SW(", .(Svals), ",", .(Kval), "K)")]/
+                            var(hat(theta))[paste("SC(", .(Svals), ",", .(Kval), "K,1,1)")]))
+  }else if(length(Svals)==1 && diffK==TRUE){
+    KSC <- (S+1)/2
+    title <- bquote(paste("Relative efficiency, ",
+                          var(hat(theta))[paste("SW(", .(Svals), ",", .(Kval), "K)")]/
+                            var(hat(theta))[paste("SC(", .(Svals), ",", .(KSC), "K,1,1)")]))
+  }else if(length(Svals)!=1 && diffK==FALSE){
+    title <- bquote(paste("Relative efficiency, ",
+                          var(hat(theta))[paste("SW(S,", .(Kval), "K)")]/
+                            var(hat(theta))[paste("SC(S,", .(Kval), "K,1,1)")]))
+  }else{
+    KSC <- "((S+1)/2)"
+    title <- bquote(paste("Relative efficiency, ",
+                          var(hat(theta))[paste("SW(S,", .(Kval), "K)")]/
+                            var(hat(theta))[paste("SC(S,", .(KSC), "K,1,1)")]))
+  }
+
+  p <- ggplot(data=REs, aes(x=psi, y=releffSCvsSW, colour=as.factor(S), linetype=as.factor(S))) +
+    geom_hline(yintercept=1, linewidth=1.5, color="gray75", linetype="solid") +
+    geom_line(linewidth=2) +
+    scale_color_manual(values=colorRampPalette(c("lightgreen", "darkgreen"))(length(Svals)),
+                       name=expression(paste("Number of sequences, ", S))) +
+    xlab(expression(paste("Correlation between cluster-period means, ", psi))) +
+    ylab("Relative efficiency") +
+    labs(title=title,
+         colour=expression(paste("Number of sequences, ", S)),
+         linetype=expression(paste("Number of sequences, ", S))) +
+    theme_bw() +
+    theme(plot.title=element_text(hjust=0.5, size=16),
+          plot.subtitle=element_text(hjust=0.5, size=14),
+          axis.title=element_text(size=12), axis.text=element_text(size=12),
+          legend.key.width = unit(1.5, "cm"), legend.title=element_text(size=14),
+          legend.text=element_text(size=14), legend.position="bottom")
   return(p)
 }

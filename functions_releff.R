@@ -139,14 +139,38 @@ VarSW_alt <- function(m, S, K, rho0, r, rhou=0){
   (12*(a - b)*(a + S*b))/(K*(S^2 - 1)*(2*a + S*b))
 }
 
+VarSClin_psi <- function(psi, S, K, m, rho0){
+  a <- (1 + (m-1)*rho0)/m
+
+  vartheta <- (2*a*((S^2+2) - (S^2-4)*psi))/(K*S*(S^2-1))
+  return(vartheta)
+}
+
+VarSCcat_psi <- function(psi, S, K, m, rho0){
+  a <- (1 + (m-1)*rho0)/m
+
+  fracterm <- ((1 + sqrt(1-psi^2))^S - psi^S)/((1 + sqrt(1-psi^2))^S + psi^S)
+  vartheta <- (2*a*(1-psi)^2)/(K*(S*(1-psi)-sqrt(1-psi^2)*fracterm))
+  return(vartheta)
+}
+
+VarSW_alt_psi <- function(psi, S, K, m, rho0){
+  a <- (1 + (m-1)*rho0)/m
+
+  (12*a*(1 - psi)*(1 + S*psi))/(K*(S^2 - 1)*(2 + S*psi))
+}
+
 pow <- function(vars, effsize, siglevel=0.05){
   z <- qnorm(siglevel/2)
-  pow <- pnorm(z + sqrt(1/vars)*effsize)
+  pow <- pnorm(z + sqrt(1/vars)*abs(effsize))
   return(pow)
 }
 
-psi_corr <- function(m, rho0, r){
-  (m*rho0*r)/(1+(m-1)*rho0)
+psi_corr <- function(m, rho0, r, rhou=0){
+  a <- (1 + (m-1)*rho0)/m
+  b <- rhou/m + r*rho0
+  
+  b/a
 }
 
 implied_r <- function(m, rho0, psi){
