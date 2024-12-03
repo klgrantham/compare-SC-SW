@@ -329,7 +329,8 @@ releffSCSW_grid_multiplot_diffm_diffS <- function(S1, S2,
                                                   corrtype, pereff,
                                                   fixedscale=FALSE, limits=c(0,2),
                                                   breaks=seq(0,2,0.2),
-                                                  fullrange=FALSE, rhou=0, imp=FALSE){
+                                                  fullrange=FALSE, rhou=0, imp=FALSE,
+                                                  fixed_incr=FALSE, factor_incr=1){
   # Compare variances of complete SW designs and basic staircase designs with
   # larger cluster-period sizes (the same total number of participants), for a
   # range of correlation parameters, and for different numbers of sequences and
@@ -351,11 +352,21 @@ releffSCSW_grid_multiplot_diffm_diffS <- function(S1, S2,
   #  Contour plot of relative efficiencies (vartheta_SW/vartheta_SC)
 
   m1_SW <- 10
-  m1_S1_SC <- ((S1+1)/2)*m1_SW
-  m1_S2_SC <- ((S2+1)/2)*m1_SW
   m2_SW <- 100
-  m2_S1_SC <- ((S1+1)/2)*m2_SW
-  m2_S2_SC <- ((S2+1)/2)*m2_SW
+  
+  if(fixed_incr==TRUE){
+    m1_SC <- factor_incr*m1_SW
+    m2_SC <- factor_incr*m2_SW
+    m1_S1_SC <- m1_SC
+    m1_S2_SC <- m1_SC
+    m2_S1_SC <- m2_SC
+    m2_S2_SC <- m2_SC
+  }else{
+    m1_S1_SC <- ((S1+1)/2)*m1_SW
+    m1_S2_SC <- ((S2+1)/2)*m1_SW
+    m2_S1_SC <- ((S1+1)/2)*m2_SW
+    m2_S2_SC <- ((S2+1)/2)*m2_SW
+  }
   relvars_m1_S1 <- gridvals_small(m1_SW, S1, 1, m1_S1_SC, S1, 1,
                                   corrtype, pereff, fullrange, rhou, imp)
   relvars_m1_S1$m <- m1_SW
@@ -390,7 +401,11 @@ releffSCSW_grid_multiplot_diffm_diffS <- function(S1, S2,
   
   S.labs <- c(paste("S = ", S1), paste("S = ", S2))
   names(S.labs) <- c(S1, S2)
-  m.labs <- c("mSW=10 \nmSC=5*(S+1)", "mSW=100 \nmSC=50*(S+1)")
+  if(fixed_incr==TRUE){
+    m.labs <- c(paste0("mSW=10 \nmSC=", m1_SC), paste0("mSW=100 \nmSC=", m2_SC))
+  }else{
+    m.labs <- c("mSW=10 \nmSC=5*(S+1)", "mSW=100 \nmSC=50*(S+1)")
+  }
   names(m.labs) <- c(m1_SW, m2_SW)
   
   title <- bquote(paste("Relative efficiency, ",
@@ -455,7 +470,7 @@ releff_SW_extendedSC_diffS <- function(S1, S2, K_SW,
                                        corrtype, pereff,
                                        fixedscale=FALSE, limits=c(0,2.5),
                                        breaks=seq(0,2.5,0.5),
-                                       fullrange=FALSE, rhou=0, imp=FALSE){
+                                       fullrange=FALSE, rhou=0, imp=FALSE, same_tot=TRUE){
   # Compare variances of complete SW designs and basic staircase designs with
   # more clusters (the same total number of participants), for a range of
   # correlation parameters, and for different numbers of sequences and
@@ -479,8 +494,14 @@ releff_SW_extendedSC_diffS <- function(S1, S2, K_SW,
 
   m1 <- 10
   m2 <- 100
-  K_S1_SC <- K_SW*(S1+1)/2
-  K_S2_SC <- K_SW*(S2+1)/2
+
+  if(same_tot==TRUE){
+    K_S1_SC <- K_SW*(S1+1)/2
+    K_S2_SC <- K_SW*(S2+1)/2
+  }else{
+    K_S1_SC <- K_SW*2
+    K_S2_SC <- K_SW*2
+  }
   relvars_m1_S1 <- gridvals_small(m1, S1, K_SW, m1, S1, K_S1_SC,
                                   corrtype, pereff, fullrange, rhou, imp)
   relvars_m1_S1$m <- m1
@@ -916,17 +937,22 @@ releff_SW_extendedSC_singleS <- function(S, K_SW, corrtype, pereff,
   return(p)
 }
 
-releffSC_SW_psi <- function(Svals, K_SW, m, rho0, pereff, diffK=FALSE){
+releffSC_SW_psi <- function(Svals, K_SW, m, rho0, pereff, diffK=FALSE, same_tot=TRUE){
   # Calculates the relative efficiency (variance of SW to SC), for all
   # combinations of psi and S values
   
   psivals <- seq(0, 0.995, 0.005)
   vals <- expand.grid(psi=psivals, S=Svals, K_SW=K_SW)
 
-  if(diffK){
+  if(diffK==TRUE && same_tot==TRUE){
     vals <- vals %>%
       mutate(
-        K_SC = (S+1)/2
+        K_SC = ((S+1)/2)*K_SW
+      )
+  }else if(diffK==TRUE && same_tot==FALSE){
+    vals <- vals %>%
+      mutate(
+        K_SC = 2*K_SW
       )
   }else{
     vals <- vals %>%
@@ -968,7 +994,7 @@ releffSC_SW_psi <- function(Svals, K_SW, m, rho0, pereff, diffK=FALSE){
   return(vals)
 }
 
-RE_lines_psi <- function(Svals, K_SW, pereff, diffK=FALSE){
+RE_lines_psi <- function(Svals, K_SW, pereff, diffK=FALSE, same_tot=TRUE){
   # Inputs:
   #  Svals - different numbers of sequences to plot together, e.g. c(3,6)
   #  K - number of clusters to randomise to each sequence
@@ -984,14 +1010,14 @@ RE_lines_psi <- function(Svals, K_SW, pereff, diffK=FALSE){
   
   # Note: RE is independent of m and rho0 for comparisons of stepped wedge with
   #       embedded and extended staircase designs
-  REs <- releffSC_SW_psi(Svals=Svals, K_SW=K_SW, m=10, rho0=0.05, pereff=pereff, diffK=diffK)
+  REs <- releffSC_SW_psi(Svals=Svals, K_SW=K_SW, m=10, rho0=0.05, pereff=pereff, diffK=diffK, same_tot=same_tot)
   
   Kval <- ifelse(K_SW==1, "", K_SW)
   if(length(Svals)==1 && diffK==FALSE){
     title <- bquote(paste("Relative efficiency, ",
                           var(hat(theta))[paste("SW(", .(Svals), ",", .(Kval), "K)")]/
                             var(hat(theta))[paste("SC(", .(Svals), ",", .(Kval), "K,1,1)")]))
-  }else if(length(Svals)==1 && diffK==TRUE){
+  }else if(length(Svals)==1 && diffK==TRUE && same_tot==TRUE){
     KSC <- (S+1)/2
     title <- bquote(paste("Relative efficiency, ",
                           var(hat(theta))[paste("SW(", .(Svals), ",", .(Kval), "K)")]/
@@ -1000,8 +1026,13 @@ RE_lines_psi <- function(Svals, K_SW, pereff, diffK=FALSE){
     title <- bquote(paste("Relative efficiency, ",
                           var(hat(theta))[paste("SW(S,", .(Kval), "K)")]/
                             var(hat(theta))[paste("SC(S,", .(Kval), "K,1,1)")]))
-  }else{
+  }else if(length(Svals)!=1 && diffK==TRUE && same_tot==TRUE){
     KSC <- "((S+1)/2)"
+    title <- bquote(paste("Relative efficiency, ",
+                          var(hat(theta))[paste("SW(S,", .(Kval), "K)")]/
+                            var(hat(theta))[paste("SC(S,", .(KSC), "K,1,1)")]))
+  }else if(length(Svals)!=1 && diffK==TRUE && same_tot==FALSE){
+    KSC <- "2"
     title <- bquote(paste("Relative efficiency, ",
                           var(hat(theta))[paste("SW(S,", .(Kval), "K)")]/
                             var(hat(theta))[paste("SC(S,", .(KSC), "K,1,1)")]))
